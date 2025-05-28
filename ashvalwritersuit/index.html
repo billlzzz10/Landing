@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inkweaver</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✍️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- PDF.js: Core library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- PDF.js: Worker (essential for background processing) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+    <!-- Mammoth.js: For .docx file reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.7.0/mammoth.browser.min.js"></script>
+    <!-- YAML.js: For YAML parsing/stringifying if needed by AI or advanced forms -->
+    <script src="https://cdn.jsdelivr.net/npm/yaml@2.2.1/dist/index.min.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        font-family: 'Sarabun', sans-serif;
+      }
+      body {
+        margin: 0;
+      }
+      #root {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      /* Custom Scrollbar - Base (light mode or if dark not specified) */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.08); /* Light track */
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(93, 92, 222, 0.6); /* Purple thumb */
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(93, 92, 222, 0.8); /* Darker purple thumb on hover */
+      }
+
+      /* Custom scrollbar for dark mode elements or when html.dark is set by theme */
+      .dark ::-webkit-scrollbar, html.dark ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+      }
+      .dark ::-webkit-scrollbar-track, html.dark ::-webkit-scrollbar-track {
+            background: #1f2937; /* Dark track, e.g., gray-800 */
+            border-radius: 10px;
+      }
+      .dark ::-webkit-scrollbar-thumb, html.dark ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* Mid-gray thumb, e.g., gray-600 */
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover, html.dark ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* Lighter gray on hover, e.g., gray-500 */
+      }
+
+      /* Prose styling (general, can be overridden by Tailwind's prose classes) */
+        .prose-sm { /* Default is for light theme, can be slightly more contrasted */
+            font-size: 0.9rem; /* 14.4px */
+            line-height: 1.65;
+            color: #374151; /* gray-700 */
+        }
+        .prose-sm p, .prose-sm ul, .prose-sm ol, .prose-sm blockquote {
+            margin-top: 1em;
+            margin-bottom: 1em;
+        }
+        .prose-sm h1 { font-size: 1.6em; margin-bottom: 0.6em; font-weight: 700; color: #111827; /* gray-900 */}
+        .prose-sm h2 { font-size: 1.4em; margin-bottom: 0.5em; font-weight: 600; color: #1f2937; /* gray-800 */}
+        .prose-sm h3 { font-size: 1.2em; margin-bottom: 0.4em; font-weight: 600; color: #1f2937; /* gray-800 */}
+        .prose-sm code { 
+            background-color: rgba(0,0,0,0.05); 
+            padding: 0.2em 0.4em; 
+            border-radius: 4px; 
+            font-family: monospace;
+            font-size: 0.85em;
+            color: #4B5563; /* gray-600 */
+        }
+        .prose-sm pre {
+            background-color: rgba(0,0,0,0.05);
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85em;
+        }
+        .prose-sm pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #374151; /* gray-700 for pre code */
+        }
+        .prose-sm a { color: #3B82F6; text-decoration: none; font-weight: 500; } /* blue-500 */
+        .prose-sm a:hover { text-decoration: underline; }
+        .prose-sm strong { font-weight: 600; color: #111827; }
+        .prose-sm hr { border-top-width: 1px; border-color: rgba(0,0,0,0.1); margin-top: 2em; margin-bottom: 2em;}
+        .prose-sm blockquote { border-left: 4px solid rgba(0,0,0,0.15); padding-left: 1.25em; font-style: normal; color: #4B5563; /* gray-600 */}
+        .prose-sm ul { list-style-type: disc; padding-left: 1.75em;}
+        .prose-sm ol { list-style-type: decimal; padding-left: 1.75em;}
+        .prose-sm ul > li::marker { color: #6b7280; /* gray-500 */}
+        .prose-sm ol > li::marker { color: #6b7280; /* gray-500 */}
+
+        /* Dark mode prose styling */
+        .dark .prose-dark { color: #d1d5db; } /* Tailwind's gray-300 */
+        .dark .prose-dark p, .dark .prose-dark ul, .dark .prose-dark ol, .dark .prose-dark blockquote { color: #9ca3af; } /* Tailwind's gray-400 */
+        .dark .prose-dark h1, .dark .prose-dark h2, .dark .prose-dark h3, .dark .prose-dark h4 { color: #f3f4f6; } /* Tailwind's gray-100 */
+        .dark .prose-dark a { color: #60A5FA; } /* Tailwind's blue-400 */
+        .dark .prose-dark strong { color: #f9fafb; } /* Tailwind's gray-50 */
+        .dark .prose-dark code { background-color: rgba(255,255,255,0.1); color: #e5e7eb; } /* gray-200 */
+        .dark .prose-dark pre { background-color: rgba(255,255,255,0.07); color: #d1d5db; } /* gray-300 */
+        .dark .prose-dark pre code { background-color: transparent; color: #e5e7eb; }
+        .dark .prose-dark hr { border-color: rgba(255,255,255,0.15); }
+        .dark .prose-dark blockquote { border-left-color: rgba(255,255,255,0.25); color: #d1d5db; }
+        .dark .prose-dark ul > li::marker { color: #9ca3af; } /* Tailwind's gray-400 */
+        .dark .prose-dark ol > li::marker { color: #9ca3af; }
+
+        /* YAML output specific styling */
+        .yaml-output pre {
+            white-space: pre-wrap; /* Ensure long lines wrap */
+            word-wrap: break-word; /* Break words if necessary */
+            font-family: monospace;
+            font-size: 0.875rem; /* 14px */
+            line-height: 1.5;
+            padding: 1rem; /* 16px */
+            border-radius: 0.5rem; /* 8px */
+            overflow-x: auto; /* Add horizontal scroll if content overflows */
+        }
+        /* Light theme YAML output */
+        .light .yaml-output pre { 
+            background-color: #f9fafb; /* gray-50 */
+            color: #1f2937; /* gray-800 */
+            border: 1px solid #e5e7eb; /* gray-200 */
+        }
+        /* Dark theme YAML output (also applies if html.dark is set by theme) */
+        .dark .yaml-output pre, html.dark .yaml-output pre {
+            background-color: #111827; /* gray-900, deeper dark for YAML */
+            color: #e5e7eb;       /* gray-200 */
+            border: 1px solid #374151; /* gray-700 */
+        }
+
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "lucide-react": "https://esm.sh/lucide-react@0.408.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.0.1",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.25.1",
+    "react-router": "https://esm.sh/react-router@6.25.1"
+  }
+}
+</script>
+</head>
+<body> {/* Theme will be applied by NoteTaskApp.tsx which adds 'dark' class to html element */}
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html><link rel="stylesheet" href="index.css">
+<script src="index.tsx" type="module"></script>

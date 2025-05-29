@@ -1,9 +1,10 @@
 
+
 export interface OperationMode {
   value: string;
   label: string;
   systemInstruction: string;
-  userPromptFormatter: (input: string, contextData?: any) => string; 
+  userPromptFormatter: (input: string, contextData?: any) => string; // Updated to accept generic contextData
 }
 
 export interface Session {
@@ -17,8 +18,7 @@ export type NotePriority = 'none' | 'low' | 'medium' | 'high';
 
 export interface NoteVersion {
   timestamp: string;
-  content: string; // Display content (potentially HTML)
-  rawMarkdownContent: string; // Always store raw markdown
+  content: string;
 }
 
 export interface Project {
@@ -27,20 +27,29 @@ export interface Project {
   genre?: string; 
   description?: string; 
   createdAt: string;
-  updatedAt?: string; // Added for "Last Modified"
+  isArchived?: boolean; // Added for project archiving
+  lastModified?: string; // For "My Projects" table
+  summary?: string; // For "My Projects" table
 }
 
+export interface NoteLink { // For bi-directional linking
+  targetTitle: string;
+  // Future: targetId?: number; (if notes have stable IDs that can be resolved)
+}
+
+// Note and Task types specific to the NoteTaskApp component
 export interface AppNote {
   id: number;
   title:string;
   icon?: string;
-  content: string; // For storing parsed HTML or as fallback
-  rawMarkdownContent: string; // Source of truth for Markdown content
+  coverImageUrl?: string; // Added for cover image
+  content: string;
   category: string;
   tags: string[];
   createdAt: string;
   updatedAt?: string;
   versions?: NoteVersion[];
+  links?: NoteLink[]; // For storing parsed forward links
   projectId?: string | null; 
 }
 
@@ -61,13 +70,27 @@ export interface AppTask {
   subtasks: AppSubtask[]; 
   createdAt: string;
   projectId?: string | null; 
+  description?: string; // For imported Markdown content
+  htmlDescription?: string; // For parsed HTML of the description
 }
 
-export interface NoteTemplate {
+export interface NoteTemplate { // System Note Template
   id: string;
   name: string;
   content: string;
+  icon?: string; // Optional icon for system templates
+  category?: string; // Optional default category for system templates
 }
+
+export interface UserNoteTemplate { // User-defined Note Template
+  id: string;
+  name: string;
+  content: string;
+  icon?: string;
+  category?: string;
+  createdAt: string;
+}
+
 
 export interface ChatTurn {
   role: 'user' | 'model';
@@ -107,11 +130,12 @@ export type RelationshipType =
 export interface CharacterRelationship {
   targetCharacterId: string; 
   targetCharacterName?: string; 
-  relationshipType: RelationshipType | string; 
+  relationshipType: RelationshipType | string; // Allow string for custom if 'Other' is chosen
   description?: string; 
 }
 
 
+// For World Anvil / Lore Management
 export interface LoreEntry {
   id: string;
   title: string;
@@ -120,24 +144,20 @@ export interface LoreEntry {
   tags: string[];
   createdAt: string;
   projectId?: string | null; 
+  coverImageUrl?: string; // For lore entry cards
 
   // Character-specific fields
   role?: CharacterRole | string; 
   characterArcana?: string[]; 
   relationships?: CharacterRelationship[];
-  age?: number | string;
-  gender?: string;
-  status?: string; // e.g., Active, Draft, Deceased
-  avatarUrl?: string; // URL to character image/avatar
 
-  // Magic System specific fields
+  // ArcanaSystem-specific fields (optional, can be in content or structured later)
   rules?: string;
   limitations?: string;
   manifestations?: string;
-
-  customFields?: Record<string, string>;
 }
 
+// For Project Management (Future Enhancement Foundation)
 export interface WritingGoal {
   id: string;
   description: string; 
@@ -151,74 +171,98 @@ export interface WritingGoal {
 export interface PlotOutlineNode {
   id: string;
   text: string;
-  order: number; 
-  parentId: string | null; 
-  childrenIds: string[]; 
-  linkedNoteId?: number | null;
-  linkedLoreEntryId?: string | null;
-  projectId?: string | null;
+  parentId: string | null;
+  order: number; // For manual sorting within siblings
+  projectId: string | null;
   createdAt: string;
-  isExpanded?: boolean; 
+  // children will be determined dynamically for rendering
 }
 
-export interface UserPreferences {
-  notificationPreferences: NotificationPreferences;
-  aiWriterPreferences: AiWriterPreferences; 
-  selectedFontFamily?: string;
-}
+export type PlotOutline = PlotOutlineNode[];
 
+
+// User Preferences
 export interface NotificationPreferences {
   taskReminders: boolean; 
   projectUpdates: boolean; 
 }
 
 export interface AiWriterPreferences {
-  repetitionThreshold: number; 
-  autoAddLoreFromAi?: boolean; // New preference
-  autoAnalyzeScenes?: boolean; // New preference
-  contextualAiMenuStyle?: 'simple' | 'full'; // New preference
+  repetitionThreshold: number;
+  autoAddLoreFromAi?: boolean;
+  autoAnalyzeScenes?: boolean;
+  contextualAiMenuStyle?: 'simple' | 'full';
 }
 
-export type ScenePurpose = "advance-plot" | "character-development" | "world-building" | "reveal" | "foreshadowing" | "action" | "dialogue" | "";
+export interface UserPreferences {
+  notificationPreferences: NotificationPreferences;
+  aiWriterPreferences: AiWriterPreferences;
+  selectedFontFamily?: string; 
+  customGeminiApiKey?: string; // For user-defined API key
+  selectedAiModel?: string;   // For user-selected AI model
+}
 
-export interface SceneCreatorFormData {
-  title: string;
-  chapter?: string; 
-  sceneNumber?: string;
-  settingLocation?: string;
-  timeOfDay?: string;
-  weather?: string;
+// AppTheme interface
+export interface AppTheme { 
+  name: string;
+  bg: string; // Main background for the entire app
+  text: string; // Primary text color
+  textSecondary: string; // Secondary, less prominent text
+  accent: string; // Accent color (usually a background for buttons, highlights)
+  accentText: string; // Text color for elements with accent background
+  
+  headerBg: string; // Background for the top header
+  headerText: string; // Text color for the header
+  
+  sidebarBg: string; // Background for the main sidebar
+  sidebarText: string; // Default text color for sidebar items
+  sidebarHoverBg: string; // Background for sidebar items on hover
+  sidebarHoverText: string; // Text color for sidebar items on hover
+  sidebarActiveBg: string; // Background for the active sidebar item
+  sidebarActiveText: string; // Text color for the active sidebar item
+  sidebarBorder: string; // Border color for the sidebar (if any)
+
+  cardBg: string; // Background for cards, modals, main content panels
+  cardBorder: string; // Border for cards
+  cardShadow: string; // Box shadow for cards
+  
+  button: string; // Primary button background
+  buttonText: string; // Primary button text
+  buttonHover: string; // Primary button background on hover
+  
+  buttonSecondaryBg: string; // Secondary button background
+  buttonSecondaryText: string; // Secondary button text
+  buttonSecondaryHoverBg: string; // Secondary button background on hover
+
+  inputBg: string; 
+  inputText: string; 
+  inputBorder: string; 
+  inputPlaceholder: string;
+  focusRing: string; // e.g., 'focus:ring-blue-500'
+  
+  aiResponseBg: string; // Background for AI response display area
+  divider: string; // Color for dividers/borders between sections
+
+  // For ThemeSelector preview
+  bg_preview?: string;
+  bg_preview_color?: string;
+  
+  // Old properties (can be mapped or deprecated if new ones cover them)
+  input?: string; // Original input styling (can be a composite class string) - AVOID USING, PREFER SPECIFIC ONES
+  scrollbarThumb?: string;
+  scrollbarTrack?: string;
+}
+
+export interface ExportTemplate {
+  id: string;
+  name: string;
   description: string;
-  charactersInvolved: string[]; 
-  povCharacter: string; 
-  emotionalArc?: string; 
-  conflictType?: string;
-  keyPlotPoints?: string;
-  foreshadowing?: string;
-  arcanaElements: string[]; 
-  purpose: ScenePurpose;
-  advancedYaml: string;
-}
-
-// Graph View Types
-export interface GraphNode {
-  id: string; // Corresponds to LoreEntry ID
-  label: string;
-  type: LoreEntry['type'];
-  x: number;
-  y: number;
-  color?: string; // Optional: for styling based on type
-  rawEntity: LoreEntry; // Store the original entity for easy access
-}
-
-export interface GraphEdge {
-  id: string; // e.g., sourceId-targetId-type
-  source: string; // Source LoreEntry ID
-  target: string; // Target LoreEntry ID
-  label?: string; // Relationship type
+  getCss: (appTheme: AppTheme) => string;
+  getHtmlWrapper: (noteContentHtml: string, noteTitle: string, templateCss: string, appTheme: AppTheme) => string;
 }
 
 
+// This ensures `window.marked` and other global libraries are recognized by TypeScript
 declare global {
   interface Window {
     marked: {
@@ -255,5 +299,7 @@ declare global {
         parse: (str: string, options?: any) => any;
         stringify: (value: any, options?: any) => string;
     };
+    Fuse: any; // For Fuse.js
+    html2pdf: any; // For html2pdf.js
   }
 }

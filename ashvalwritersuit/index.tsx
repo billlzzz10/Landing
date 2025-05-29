@@ -1,7 +1,6 @@
-
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { NoteTaskApp } from './NoteTaskApp';
+import ReactDOM from 'react-do';
+import { App } from './NoteTaskApp'; // Changed to import App
 
 const rootElement = document.getElementById('root');
 
@@ -13,6 +12,6 @@ const root = ReactDOM.createRoot(rootElement);
 
 root.render(
   <React.StrictMode>
-    <NoteTaskApp />
+    <App /> {/* Changed to render App */}
   </React.StrictMode>
 );

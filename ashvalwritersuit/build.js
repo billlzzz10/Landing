@@ -26,15 +26,6 @@ async function build() {
     process.exit(1);
   }
 
-  // Copy metadata.json to dist
-  try {
-    await fs.copy('metadata.json', path.join(outDir, 'metadata.json'));
-    console.log(`Copied metadata.json to ${outDir}.`);
-  } catch (e) {
-    console.error('Error copying metadata.json:', e);
-    process.exit(1);
-  }
-
   // Modify the copied index.html to point to index.js
   try {
     const indexPath = path.join(outDir, 'index.html');
@@ -57,23 +48,18 @@ async function build() {
       bundle: true,
       outfile: path.join(outDir, 'index.js'),
       minify: true,
-      sourcemap: 'external', // 'inline' or false for smaller production builds
+      sourcemap: 'external', 
       platform: 'browser',
-      format: 'esm', // Ensure ES Module output for script type="module"
-      jsx: 'automatic', // Use automatic JSX runtime
+      format: 'esm',
+      jsx: 'automatic',
       loader: {
         '.tsx': 'tsx',
         '.ts': 'ts',
-        // Add other loaders if necessary (e.g., .css, .svg)
       },
       define: {
-        // Ensure process.env.NODE_ENV is set for React's production optimizations
-        'process.env.NODE_ENV': '"production"',
-        // Define REACT_APP_BACKEND_API_URL if it's set in the build environment
-        // This allows configuring the backend URL at build time.
-        'process.env.REACT_APP_BACKEND_API_URL': JSON.stringify(process.env.REACT_APP_BACKEND_API_URL || ''),
-        // Inject API_KEY for frontend Gemini API calls
-        'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+        'process.env.REACT_APP_BACKEND_API_URL': JSON.stringify('/api'), // For Firebase Hosting rewrites
+        // API_KEY is no longer needed in frontend
       },
       external: [
         'react',
@@ -81,14 +67,10 @@ async function build() {
         'react-dom/client',
         'react/jsx-runtime',
         'lucide-react',
-        '@google/genai'
+        '@google/genai', // Frontend service no longer initializes it directly
+        'react-router-dom'
+        // Note: firebase-functions, cors, express are backend, no need to be external for frontend
       ],
-      // Splitting can be enabled for larger apps, but for now, a single bundle is simpler.
-      // splitting: true,
-      // chunkNames: 'chunks/[name]-[hash]',
-
-      // To handle React 19's ESM.sh imports correctly, ensure esbuild can resolve them.
-      // If there are issues, specific configurations for shims or resolving might be needed.
     });
 
     if (result.errors.length > 0) {
@@ -109,3 +91,4 @@ async function build() {
 }
 
 build();
+    

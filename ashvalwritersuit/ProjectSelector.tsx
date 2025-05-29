@@ -1,11 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Project } from './types';
-import { AppTheme } from './NoteTaskApp';
-import { Package, ChevronDown, Plus, CheckCircle } from 'lucide-react'; 
+import { Project, AppTheme } from './types'; 
+// import { AppTheme } from './NoteTaskApp'; // Removed old import
+import { BookOpen, ChevronDown, Plus, Edit3, Trash2, CheckCircle } from 'lucide-react'; // Changed Package to BookOpen
 
 interface ProjectSelectorProps {
-  projects: Project[];
+  projects: Project[]; // Should be pre-filtered to non-archived
   activeProjectId: string | null;
   currentTheme: AppTheme;
   onSelectProject: (projectId: string | null) => void;
@@ -13,7 +12,7 @@ interface ProjectSelectorProps {
 }
 
 const ProjectSelector: React.FC<ProjectSelectorProps> = ({
-  projects,
+  projects, // Expects non-archived projects
   activeProjectId,
   currentTheme,
   onSelectProject,
@@ -53,46 +52,44 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
     onSelectProject(id);
     setIsOpen(false);
   }
-  
-  const baseInputStyle = `w-full px-3 py-2.5 rounded-lg ${currentTheme.inputBg} ${currentTheme.inputText} ${currentTheme.inputBorder} ${currentTheme.inputPlaceholder} ${currentTheme.focusRing} focus:border-transparent focus:outline-none text-sm`;
 
   return (
     <div className="relative" ref={selectorRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg ${currentTheme.cardBg} border ${currentTheme.divider} hover:border-opacity-70 transition-all duration-200 text-sm font-medium shadow-md`}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg ${currentTheme.cardBg} hover:opacity-90 transition-opacity text-sm shadow`}
         aria-haspopup="true"
         aria-expanded={isOpen}
         aria-label={`Current project: ${displayLabel}. Click to change project.`}
       >
-        <Package className={`w-5 h-5 ${currentTheme.accent.replace('bg-', 'text-')}`} />
-        <span className={`${currentTheme.text} max-w-[150px] sm:max-w-[220px] truncate`}>{displayLabel}</span>
-        <ChevronDown className={`w-5 h-5 ${currentTheme.textSecondary} transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <BookOpen className={`w-4 h-4 ${currentTheme.accent.replace('bg-', 'text-')}`} /> {/* Changed icon here */}
+        <span className={`${currentTheme.text} max-w-[120px] sm:max-w-[200px] truncate`}>{displayLabel}</span>
+        <ChevronDown className={`w-4 h-4 ${currentTheme.text} transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className={`absolute top-full right-0 mt-2 w-72 ${currentTheme.cardBg} border ${currentTheme.divider} rounded-xl shadow-2xl z-20 py-2.5`}>
+        <div className={`absolute top-full right-0 mt-2 w-64 ${currentTheme.cardBg} border ${currentTheme.text === 'text-white' || currentTheme.text === 'text-slate-300' ? 'border-slate-600' : 'border-gray-300'} rounded-xl shadow-xl z-20 py-2`}>
           {showCreateInput ? (
-            <div className="p-2.5 space-y-2.5 border-b ${currentTheme.divider} mb-2">
+            <div className="p-2 space-y-2">
               <input
                 type="text"
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 placeholder="ชื่อโปรเจกต์ใหม่..."
-                className={baseInputStyle}
+                className={`w-full px-3 py-2 text-sm rounded-md ${currentTheme.input} focus:outline-none focus:ring-2 ${currentTheme.accent.replace('bg-','focus:ring-')}`}
                 autoFocus
                 onKeyPress={(e) => e.key === 'Enter' && handleCreate()}
               />
               <div className="flex gap-2">
                 <button
                     onClick={() => { setShowCreateInput(false); setNewProjectName('');}}
-                    className={`flex-1 text-xs py-2 px-2.5 rounded-md ${currentTheme.buttonSecondaryBg} ${currentTheme.buttonSecondaryText} font-medium hover:bg-opacity-80`}
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-md ${currentTheme.text} bg-white/10 hover:bg-white/20`}
                 >
                     ยกเลิก
                 </button>
                 <button
                     onClick={handleCreate}
-                    className={`flex-1 text-xs py-2 px-2.5 rounded-md ${currentTheme.button} ${currentTheme.buttonText} font-medium`}
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-md ${currentTheme.button} text-white`}
                 >
                     สร้าง
                 </button>
@@ -101,33 +98,33 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
           ) : (
             <button
               onClick={() => setShowCreateInput(true)}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm ${currentTheme.text} hover:${currentTheme.inputBg} transition-colors`}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm ${currentTheme.text} hover:bg-white/10 transition-colors`}
             >
               <Plus className="w-4 h-4" /> สร้างโปรเจกต์ใหม่
             </button>
           )}
           
+          <div className="my-1 border-t border-white/10"></div>
+
           <button
             onClick={() => handleSelect(null)}
-            className={`w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 text-sm ${currentTheme.text} hover:${currentTheme.inputBg} transition-colors 
-                        ${!activeProjectId ? `${currentTheme.accent} bg-opacity-20 ${currentTheme.accent.replace('bg-','text-')} font-semibold` : ''}`}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm ${currentTheme.text} hover:bg-white/10 transition-colors ${!activeProjectId ? `${currentTheme.accent} bg-opacity-20 font-semibold` : ''}`}
           >
-            <span>โปรเจกต์ทั้งหมด / ไม่ได้กำหนด</span>
-            {!activeProjectId && <CheckCircle size={16} className={`${currentTheme.accent.replace('bg-', 'text-')}`} />}
+            โปรเจกต์ทั้งหมด / ไม่ได้กำหนด
+            {!activeProjectId && <CheckCircle size={14} className={`${currentTheme.accent.replace('bg-', 'text-')}`} />}
           </button>
 
-          {projects.length > 0 && <div className={`my-1.5 border-t ${currentTheme.divider}`}></div>}
+          {projects.length > 0 && <div className="my-1 border-t border-white/10"></div>}
           
-          <div className="max-h-56 overflow-y-auto custom-scrollbar">
-            {projects.map(project => (
+          <div className="max-h-48 overflow-y-auto">
+            {projects.map(project => ( // projects here are already filtered non-archived
               <button
                 key={project.id}
                 onClick={() => handleSelect(project.id)}
-                className={`w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 text-sm ${currentTheme.text} hover:${currentTheme.inputBg} transition-colors
-                            ${activeProjectId === project.id ? `${currentTheme.accent} bg-opacity-20 ${currentTheme.accent.replace('bg-','text-')} font-semibold` : ''}`}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm ${currentTheme.text} hover:bg-white/10 transition-colors ${activeProjectId === project.id ? `${currentTheme.accent} bg-opacity-20 font-semibold` : ''}`}
               >
                 <span className="truncate">{project.name}</span>
-                {activeProjectId === project.id && <CheckCircle size={16} className={`${currentTheme.accent.replace('bg-', 'text-')}`} />}
+                {activeProjectId === project.id && <CheckCircle size={14} className={`${currentTheme.accent.replace('bg-', 'text-')}`} />}
               </button>
             ))}
           </div>

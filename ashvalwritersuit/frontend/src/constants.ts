@@ -1,4 +1,5 @@
 
+
 import { OperationMode, NoteTemplate, NotePriority, LoreEntry, RelationshipType, ExportTemplate, AppTheme } from './types'; 
 
 export const COMMON_RELATIONSHIP_TYPES: RelationshipType[] = [
@@ -152,9 +153,10 @@ export const PROCESSING_AI_RESPONSE_MESSAGE = '<p class="text-gray-400 dark:text
 
 export const AVAILABLE_AI_MODELS: string[] = [
   'gemini-2.5-flash-preview-04-17', // Default and recommended Flash model
-  'gemini-pro', 
+  // 'gemini-pro', // Older, less recommended if flash is available and suitable
 ];
-export const MODEL_NAME = AVAILABLE_AI_MODELS[0]; // Default model
+// Default model for the application, used if user hasn't selected one or for specific backend calls.
+export const MODEL_NAME = AVAILABLE_AI_MODELS[0]; 
 
 export const MAX_INPUT_FILES = 10; 
 export const AI_MAX_INPUT_CHARS = 75000; 

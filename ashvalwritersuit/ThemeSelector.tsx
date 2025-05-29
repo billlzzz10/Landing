@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { Palette } from 'lucide-react';
-import { AppTheme } from './NoteTaskApp'; 
+import { AppTheme } from './types';
 
 interface ThemeSelectorProps {
-  themes: Record<string, AppTheme>; 
-  activeTheme: string; // This is the key of the active theme, e.g., "inkweaverDark"
-  currentThemeStyles: AppTheme; // This is the full style object of the active theme
+  themes: Record<string, AppTheme>;
+  activeTheme: string;
+  currentThemeStyles: AppTheme;
   setActiveTheme: (themeKey: string) => void;
 }
 
@@ -23,46 +23,35 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ themes, activeTheme, curr
     if (showSelector) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSelector]);
 
+
   return (
-    <div className="relative inline-block" ref={selectorRef}>
+    <div className="relative" ref={selectorRef}>
       <button
         onClick={() => setShowSelector(!showSelector)}
-        className={`p-3 rounded-full transition-all duration-300 shadow-lg
-                    ${showSelector ? `${currentThemeStyles.accent} ${currentThemeStyles.accentText}` : `${currentThemeStyles.cardBg} ${currentThemeStyles.textSecondary} hover:bg-opacity-90`}
-                  `}
-        title="Select Theme"
-        aria-label="Select Theme"
+        className={`p-2 rounded-full transition-colors duration-200 hover:bg-opacity-80 
+                   ${showSelector ? currentThemeStyles.sidebarHoverBg : 'bg-transparent'} 
+                   ${currentThemeStyles.headerText}`}
+        title="เลือกธีม"
+        aria-label="เลือกธีม"
         aria-expanded={showSelector}
       >
-        <Palette className="w-5 h-5" />
+        <Palette className={`w-5 h-5`} />
       </button>
       {showSelector && (
-        <div 
-          className={`absolute top-full right-0 mt-2 w-auto min-w-[180px] sm:min-w-[220px] md:min-w-[260px] ${currentThemeStyles.cardBg} rounded-xl p-3 sm:p-4 shadow-2xl border ${currentThemeStyles.divider} z-50`}
-        >
-          <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+        <div className={`absolute top-full right-0 mt-2 ${currentThemeStyles.cardBg} border ${currentThemeStyles.cardBorder} rounded-xl p-3 shadow-xl z-50`}>
+          <p className={`text-xs ${currentThemeStyles.textSecondary} mb-2 px-1`}>เลือกธีม:</p>
+          <div className="flex gap-2">
             {Object.entries(themes).map(([key, theme]) => (
               <button
                 key={key}
                 onClick={() => { setActiveTheme(key); setShowSelector(false);}}
-                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-300 transform ${theme.bg} 
-                  ${activeTheme === key 
-                    ? `ring-3 ring-offset-2 ${theme.name === 'Classic Light' ? 'ring-indigo-500' : 'ring-teal-400'} ring-offset-transparent scale-110 shadow-xl` 
-                    : 'hover:scale-105 hover:shadow-md'
-                  }
-                `}
+                className={`w-8 h-8 rounded-full transition-all duration-200 border-2 ${activeTheme === key ? currentThemeStyles.focusRing?.replace('focus:ring-','ring-') : 'border-transparent'} hover:scale-105 ${theme.bg_preview || theme.bg}`}
                 title={theme.name}
                 aria-label={`Set theme to ${theme.name}`}
-                style={{ 
-                  // Ensure border color is visible on the card background of the selector itself
-                  borderColor: activeTheme === key ? (currentThemeStyles.name === 'Classic Light' ? currentThemeStyles.accent.replace('bg-','border-') : 'rgba(255,255,255,0.3)') : 'transparent',
-                  boxShadow: activeTheme === key ? `0 0 0 2px ${theme.name === 'Classic Light' ? theme.accent.replace('bg-','var(--tw-ring-color, #4f46e5)') : 'var(--tw-ring-color, #2dd4bf)' }` : undefined // teal-400, indigo-500
-                }}
+                style={{ backgroundColor: theme.bg_preview_color || undefined }} // For gradient themes, bg_preview_color can be a solid representation
               />
             ))}
           </div>
@@ -71,5 +60,31 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ themes, activeTheme, curr
     </div>
   );
 };
+
+// Helper to add bg_preview and bg_preview_color to themes in NoteTaskApp if they don't exist
+export const processThemesForSelector = (themes: Record<string, AppTheme>): Record<string, AppTheme> => {
+    const processed: Record<string, AppTheme> = {};
+    for (const key in themes) {
+        const theme = themes[key];
+        processed[key] = {
+            ...theme,
+            bg_preview: theme.bg.split(' ').find(cls => cls.startsWith('from-') || cls.startsWith('bg-') && !cls.includes('gradient')) || theme.bg,
+            bg_preview_color: theme.sidebarActiveBg.startsWith('bg-') ? undefined : theme.sidebarActiveBg // If it's a class, Tailwind handles it. If it's a hex, use it.
+        };
+         // If bg is a gradient, try to pick a representative color for the preview button
+        if (theme.bg.includes('gradient')) {
+            const fromColorClass = theme.bg.split(' ').find(cls => cls.startsWith('from-'));
+            if (fromColorClass) {
+                 processed[key].bg_preview = fromColorClass; // Use the 'from-' color of the gradient
+            } else {
+                 processed[key].bg_preview = theme.sidebarBg; // Fallback to sidebar or accent
+            }
+        } else {
+             processed[key].bg_preview = theme.bg;
+        }
+    }
+    return processed;
+};
+
 
 export default ThemeSelector;

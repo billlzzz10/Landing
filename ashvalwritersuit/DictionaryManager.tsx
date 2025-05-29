@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { AppTheme } from './NoteTaskApp'; // Assuming AppTheme is exported from NoteTaskApp
+import { AppTheme } from './types'; 
 import { BookText, Search, Trash2, Plus, XCircle } from 'lucide-react';
 
 interface DictionaryManagerProps {
@@ -66,7 +65,7 @@ const DictionaryManager: React.FC<DictionaryManagerProps> = ({ learnedWords, set
               placeholder="ค้นหาคำศัพท์..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full py-2.5 pl-10 pr-4 rounded-lg ${currentTheme.inputBg} ${currentTheme.inputText} ${currentTheme.inputBorder} focus:outline-none focus:ring-2 ${currentTheme.accent.replace('bg-', 'focus:ring-')}`}
+              className={`w-full py-2.5 pl-10 pr-4 rounded-lg ${currentTheme.input} focus:outline-none focus:ring-2 ${currentTheme.accent.replace('bg-', 'focus:ring-')}`}
               aria-label="ค้นหาคำศัพท์ในพจนานุกรม"
             />
             <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 ${currentTheme.text} opacity-50`} />
@@ -78,12 +77,12 @@ const DictionaryManager: React.FC<DictionaryManagerProps> = ({ learnedWords, set
               value={newWordInput}
               onChange={(e) => setNewWordInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddWord()}
-              className={`flex-grow py-2.5 px-3 rounded-lg ${currentTheme.inputBg} ${currentTheme.inputText} ${currentTheme.inputBorder} focus:outline-none focus:ring-2 ${currentTheme.accent.replace('bg-', 'focus:ring-')}`}
+              className={`flex-grow py-2.5 px-3 rounded-lg ${currentTheme.input} focus:outline-none focus:ring-2 ${currentTheme.accent.replace('bg-', 'focus:ring-')}`}
               aria-label="ป้อนคำศัพท์ใหม่เพื่อเพิ่มเข้าพจนานุกรม"
             />
             <button
               onClick={handleAddWord}
-              className={`${currentTheme.button} ${currentTheme.buttonText} px-4 py-2.5 rounded-lg transition-colors duration-300 hover:scale-105 shadow-md flex items-center text-sm`}
+              className={`${currentTheme.button} text-white px-4 py-2.5 rounded-lg transition-colors duration-300 hover:scale-105 shadow-md flex items-center text-sm`}
               title="เพิ่มคำศัพท์ใหม่"
             >
               <Plus className="w-4 h-4 mr-1.5" /> เพิ่ม
@@ -104,7 +103,7 @@ const DictionaryManager: React.FC<DictionaryManagerProps> = ({ learnedWords, set
         )}
 
         {filteredWords.length > 0 && (
-          <div className={`max-h-[60vh] overflow-y-auto space-y-2 pr-2 rounded-md ${currentTheme.inputBg} bg-opacity-30 p-3`}>
+          <div className={`max-h-[60vh] overflow-y-auto space-y-2 pr-2 rounded-md ${currentTheme.input} bg-opacity-30 p-3`}>
             {filteredWords.map(word => (
               <div
                 key={word}

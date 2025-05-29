@@ -1,7 +1,6 @@
 {
-  "name": "AshvalWriterSuiteVer5.5",
+  "name": "Ashvalwritersuit",
   "description": "A React-based application for managing notes and tasks with multiple themes. Helps users organize ideas and to-do lists efficiently.",
-  "version": "4.0.0",
   "requestFramePermissions": [],
   "prompt": ""
 }

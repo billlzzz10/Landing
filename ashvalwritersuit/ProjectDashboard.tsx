@@ -1,167 +1,354 @@
+import React, { useEffect, useRef, useMemo } from 'react';
+import { AppNote, AppTask, LoreEntry, Project, AppTheme } from './types';
+import { BarChart2, ListChecks, FileText, TrendingUp, StickyNote, ListTodo, Bot, Clock, PieChart, Edit3 as EditIcon, CheckCircle, Activity, Zap, Coffee, Users, MapPin, Package as PackageIcon, Plus, Maximize, Briefcase, FileArchive as ArchiveIcon, GitBranch, Brain, BookOpen } from 'lucide-react';
+import { Chart, registerables, ChartConfiguration, ChartItem } from 'chart.js/auto';
 
-import React from 'react';
-import { AppNote, AppTask, LoreEntry, Project } from './types'; 
-import { AppTheme } from './NoteTaskApp'; 
-import { BarChart2, ListChecks, FileText, Users, Layers, Aperture, Edit3, BookOpen, Type, Brain, Zap, Clock, FilePlus2, SquareTerminal, Settings } from 'lucide-react'; 
+Chart.register(...registerables);
 
 interface ProjectDashboardProps {
   notes: AppNote[];
   tasks: AppTask[];
-  loreEntries: LoreEntry[]; 
-  activeProject: Project | null | undefined; 
+  loreEntries: LoreEntry[];
+  activeProject: Project | null | undefined;
   currentTheme: AppTheme;
-  onQuickAddNote: () => void;
-  onQuickAddTask: () => void;
-  onNavigateToTab: (tabId: string) => void;
+  onNavigateTo: (path: string) => void;
+  onOpenNoteModal: () => void;
+  onOpenTaskModal: () => void;
+  pomodoroCurrentMode: 'work' | 'shortBreak' | 'longBreak';
+  pomodoroTimeLeft: number;
+  formatPomodoroTime: (seconds: number) => string;
 }
 
-const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ 
-  notes, 
-  tasks, 
-  loreEntries, 
-  activeProject, 
-  currentTheme,
-  onQuickAddNote,
-  onQuickAddTask,
-  onNavigateToTab
-}) => {
-  const projectNotes = activeProject ? notes.filter(n => n.projectId === activeProject.id) : notes;
-  const projectTasks = activeProject ? tasks.filter(t => t.projectId === activeProject.id) : tasks;
-  const projectLore = activeProject ? loreEntries.filter(l => l.projectId === activeProject.id) : loreEntries;
-
-  const totalNotesInContext = projectNotes.length;
-  const totalTasksInContext = projectTasks.length;
-  const completedTasksInContext = projectTasks.filter(task => task.completed).length;
-  const incompleteTasksInContext = totalTasksInContext - completedTasksInContext;
-  
-  const totalCharsInNotes = projectNotes.reduce((sum, note) => {
-    const tempDiv = document.createElement('div');
-    // Use rawMarkdownContent for char count if available, otherwise content
-    tempDiv.innerHTML = note.rawMarkdownContent || note.content;
-    const text = tempDiv.textContent || tempDiv.innerText || "";
-    return sum + text.length;
-  }, 0);
-
-  const episodeChapterCount = projectNotes.filter(n => 
-    ['chapter', 'episode'].includes(n.category.toLowerCase()) ||
-    n.tags.some(tag => ['chapter', 'episode'].includes(tag.toLowerCase()))
-  ).length;
-
-  const characterCount = projectLore.filter(l => l.type === 'Character').length;
-  const sceneCount = projectNotes.filter(n => 
-    n.category.toLowerCase() === 'scene' ||
-    n.tags.some(tag => tag.toLowerCase() === 'scene')
-  ).length;
-  const arcanaSystemCount = projectLore.filter(l => l.type === 'ArcanaSystem' || (l.type === 'Concept' && l.tags.some(tag => tag.toLowerCase() === 'arcana'))).length;
-  const loreEntryCount = projectLore.length;
-
-
-  const StatCard: React.FC<{ title: string; value: string | number; icon: React.ElementType; details?: string; colorClass?: string }> = ({ title, value, icon: Icon, details, colorClass }) => (
-    <div className={`${currentTheme.cardBg} p-5 sm:p-6 rounded-xl shadow-xl flex items-center space-x-4 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1`}>
-      <div className={`p-3 sm:p-4 rounded-full ${colorClass || currentTheme.accent} bg-opacity-20 flex-shrink-0`}>
-        <Icon className={`w-6 h-6 sm:w-7 sm:h-7 ${colorClass || currentTheme.accent.replace('bg-','text-')}`} />
-      </div>
-      <div>
-        <p className={`${currentTheme.textSecondary} text-sm sm:text-base`}>{title}</p>
-        <p className={`text-2xl sm:text-3xl font-bold ${currentTheme.text}`}>{value}</p>
-        {details && <p className={`${currentTheme.textSecondary} text-xs mt-0.5`}>{details}</p>}
-      </div>
-    </div>
-  );
-  
-  const QuickActionCard: React.FC<{ title: string; icon: React.ElementType; onClick: () => void; description?: string;}> = ({ title, icon: Icon, onClick, description }) => (
-    <button
-      onClick={onClick}
-      className={`${currentTheme.buttonSecondaryBg} ${currentTheme.buttonSecondaryText} p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center justify-center text-center group hover:border hover:${currentTheme.accent.replace('bg-','border-')}/40`}
-      aria-label={title}
-    >
-      <div className={`p-3 rounded-full ${currentTheme.accent} bg-opacity-20 mb-3 transition-all duration-300 group-hover:scale-110`}>
-        <Icon className={`w-7 h-7 ${currentTheme.accent.replace('bg-','text-')}`} />
-      </div>
-      <h4 className={`font-semibold ${currentTheme.text} text-md mb-1`}>{title}</h4>
-      {description && <p className={`${currentTheme.textSecondary} text-xs`}>{description}</p>}
-    </button>
-  );
-
-
-  return (
-    <div className="py-6">
-      <h2 className={`text-3xl sm:text-4xl font-bold ${currentTheme.text} mb-8 text-center`}>
-        {activeProject ? `ภาพรวมโปรเจกต์: ${activeProject.name}` : "ภาพรวมทั้งหมด"}
-      </h2>
-
-      {activeProject && (activeProject.genre || activeProject.description) && (
-        <div className={`${currentTheme.cardBg} p-6 rounded-xl shadow-xl mb-8`}>
-          {activeProject.genre && (
-            <p className={`${currentTheme.text} text-md mb-1.5`}>
-              <span className={`font-semibold opacity-80 ${currentTheme.textSecondary}`}>ประเภท:</span> {activeProject.genre}
-            </p>
-          )}
-          {activeProject.description && (
-            <p className={`${currentTheme.textSecondary} text-sm leading-relaxed`}>
-             {activeProject.description}
-            </p>
-          )}
-           {/* Consider adding an Edit button here or in AppSettings for project details */}
+const StatCard: React.FC<{ title: string; value: string | number; icon: JSX.Element; theme: AppTheme; details?: string; progress?: number; colorClass?: string }> = ({ title, value, icon, theme, details, progress, colorClass = theme.accent }) => {
+    const iconColor = theme.accentText || colorClass.replace('bg-', 'text-');
+    const progressBgColor = colorClass.startsWith('bg-') ? colorClass : `bg-${colorClass}-500`;
+    
+    return (
+    <div className={`glass-card rounded-2xl p-5 sm:p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 animate-fadeIn`}>
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <p className={`${theme.textSecondary} text-xs sm:text-sm mb-1`}>{title}</p>
+          <p className={`text-xl sm:text-2xl font-bold ${theme.text}`}>{value}</p>
         </div>
-      )}
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6 mb-8">
-        <StatCard title="โน้ตทั้งหมด" value={totalNotesInContext} icon={FileText} />
-        <StatCard title="งานทั้งหมด" value={totalTasksInContext} icon={ListChecks} details={`${completedTasksInContext} เสร็จสิ้น`} />
-        <StatCard title="คลังข้อมูลโลก" value={loreEntryCount} icon={BookOpen} />
-        <StatCard title="ตัวอักษรในโน้ต" value={totalCharsInNotes.toLocaleString()} icon={Type} />
-        
-        <StatCard title="บท/ตอน" value={episodeChapterCount} icon={Layers} colorClass="text-purple-400"/>
-        <StatCard title="ตัวละคร" value={characterCount} icon={Users} colorClass="text-indigo-400"/>
-        <StatCard title="ฉาก" value={sceneCount} icon={Aperture} colorClass="text-pink-400"/>
-        <StatCard title="ระบบ Arcana" value={arcanaSystemCount} icon={Brain} colorClass="text-cyan-400"/> 
-      </div>
-      
-      {/* Quick Actions Section */}
-      <div className={`${currentTheme.cardBg} p-6 rounded-xl shadow-xl mb-8`}>
-        <h3 className={`text-xl font-semibold ${currentTheme.text} mb-5 border-b ${currentTheme.divider} pb-3 flex items-center`}>
-          <SquareTerminal className={`w-5 h-5 mr-2.5 ${currentTheme.accent.replace('bg-','text-')}`} />
-          เครื่องมือด่วน (Quick Actions)
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <QuickActionCard title="เพิ่มโน้ตใหม่" icon={FilePlus2} onClick={onQuickAddNote} description="สร้างโน้ตสำหรับไอเดียหรือเนื้อหาใหม่"/>
-          <QuickActionCard title="เพิ่มงานใหม่" icon={ListChecks} onClick={onQuickAddTask} description="สร้างรายการสิ่งที่ต้องทำใหม่"/>
-          <QuickActionCard title="เปิดคลังข้อมูลโลก" icon={BookOpen} onClick={() => onNavigateToTab('world-anvil')} description="จัดการตัวละคร สถานที่ และข้อมูลโลก"/>
-          <QuickActionCard title="เปิด AI Writer" icon={Zap} onClick={() => onNavigateToTab('ai-writer')} description="ใช้ผู้ช่วย AI ในการเขียน"/>
-          <QuickActionCard title="เปิด Pomodoro" icon={Clock} onClick={() => onNavigateToTab('pomodoro')} description="เริ่มจับเวลาทำงานและพักผ่อน"/>
-          <QuickActionCard title="ตั้งค่าแอป" icon={Settings} onClick={() => onNavigateToTab('settings')} description="ปรับแต่งการทำงานของแอป"/>
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${colorClass} bg-opacity-10 flex items-center justify-center`}>
+          {React.cloneElement(icon, { className: `w-5 h-5 sm:w-6 sm:h-6 ${iconColor}`})}
         </div>
       </div>
-
-
-      {totalTasksInContext > 0 && (
-        <div className={`${currentTheme.cardBg} p-6 rounded-xl shadow-xl mb-8`}>
-          <h3 className={`text-xl font-semibold ${currentTheme.text} mb-4`}>สรุปสถานะงาน</h3>
-          <div className="space-y-2.5">
-              <div className="flex justify-between items-center text-sm">
-                  <span className={`${currentTheme.textSecondary}`}>งานที่เสร็จแล้ว:</span>
-                  <span className={`font-semibold ${currentTheme.text}`}>{completedTasksInContext}</span>
-              </div>
-              <div className={`w-full ${currentTheme.inputBg} bg-opacity-50 rounded-full h-3 sm:h-3.5`}>
-                   <div className={`${currentTheme.accent} h-3 sm:h-3.5 rounded-full transition-all duration-500 ease-out`} style={{ width: `${totalTasksInContext > 0 ? (completedTasksInContext / totalTasksInContext) * 100 : 0}%` }}></div>
-              </div>
-               <div className="flex justify-between items-center mt-1 text-sm">
-                  <span className={`${currentTheme.textSecondary}`}>งานที่ยังไม่เสร็จ:</span>
-                  <span className={`font-semibold ${currentTheme.text}`}>{incompleteTasksInContext}</span>
-              </div>
+      {progress !== undefined && details && (
+        <div>
+          <div className="flex justify-between text-xs mb-1">
+            <span className={`${theme.textSecondary}`}>{details}</span>
+          </div>
+          <div className={`w-full h-1.5 sm:h-2 ${theme.inputBg} bg-opacity-30 rounded-full overflow-hidden`}>
+            <div className={`h-full ${progressBgColor} rounded-full transition-all duration-500 ease-out`} style={{ width: `${progress}%` }}></div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const QuickActionCard: React.FC<{ title: string; description: string; icon: JSX.Element; onClick: () => void; theme: AppTheme }> = ({ title, description, icon, onClick, theme }) => (
+  <button
+    onClick={onClick}
+    className={`glass-card rounded-xl shadow-md p-4 w-full text-left hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-2 ${theme.focusRing}`}
+  >
+    <div className={`rounded-full w-10 h-10 sm:w-12 sm:h-12 ${theme.accent} bg-opacity-10 flex items-center justify-center mb-2 sm:mb-3`}>
+       {React.cloneElement(icon, { className: `w-5 h-5 sm:w-6 sm:h-6 ${theme.accentText || theme.accent.replace('bg-','text-')}` })}
+    </div>
+    <h3 className={`font-semibold ${theme.text} text-sm sm:text-base`}>{title}</h3>
+    <p className={`${theme.textSecondary} text-xs sm:text-sm`}>{description}</p>
+  </button>
+);
+
+const ProgressBar: React.FC<{label: string, current: number, target: number, unit: string, colorClass: string, theme: AppTheme}> = ({label, current, target, unit, colorClass, theme}) => {
+    const percentage = target > 0 ? Math.min((current / target) * 100, 100) : (current > 0 ? 100 : 0); // If target is 0 but current > 0, show 100%
+    const displayColor = colorClass.startsWith('bg-') ? colorClass : colorClass.startsWith('text-') ? colorClass.replace('text-','bg-') : `bg-${colorClass}-500`;
+    return (
+        <div className="mb-3 animate-fadeIn" style={{animationDelay: '0.2s'}}>
+            <div className="flex justify-between items-center text-xs mb-1">
+                <span className={`${theme.text}`}>{label}</span>
+                <span className={`${theme.textSecondary}`}>{current.toLocaleString()}{target > 0 ? `/${target.toLocaleString()}`: ''} {unit} {target > 0 ? `(${Math.round(percentage)}%)` : ''}</span>
+            </div>
+            <div className={`w-full ${theme.inputBg} bg-opacity-30 rounded-full h-2 overflow-hidden`}>
+                <div className={`h-2 rounded-full ${displayColor} transition-all duration-500 ease-out`} style={{ width: `${percentage}%` }}></div>
+            </div>
+        </div>
+    );
+}
+
+
+const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
+  notes,
+  tasks,
+  loreEntries,
+  activeProject,
+  currentTheme,
+  onNavigateTo,
+  onOpenNoteModal,
+  onOpenTaskModal,
+  pomodoroCurrentMode,
+  pomodoroTimeLeft,
+  formatPomodoroTime,
+}) => {
+  const activityChartRef = useRef<HTMLCanvasElement>(null);
+  const contentDistributionChartRef = useRef<HTMLCanvasElement>(null);
+  const chartInstancesRef = useRef<{ activity?: Chart, contentDistribution?: Chart }>({});
+
+  const projectData = useMemo(() => {
+    const pNotes = activeProject ? notes.filter(n => n.projectId === activeProject.id) : notes;
+    const pTasks = activeProject ? tasks.filter(t => t.projectId === activeProject.id) : tasks;
+    const pLore = activeProject ? loreEntries.filter(l => l.projectId === activeProject.id) : loreEntries;
+    return { projectNotes: pNotes, projectTasks: pTasks, projectLore: pLore };
+  }, [notes, tasks, loreEntries, activeProject]);
+
+  const { projectNotes, projectTasks, projectLore } = projectData;
+
+  useEffect(() => {
+    if (chartInstancesRef.current.activity) chartInstancesRef.current.activity.destroy();
+    if (chartInstancesRef.current.contentDistribution) chartInstancesRef.current.contentDistribution.destroy();
+    chartInstancesRef.current = {};
+
+    const isDark = currentTheme.name.toLowerCase().includes('dark') || currentTheme.name.toLowerCase().includes('deep');
+    const primaryTextColor = currentTheme.text.startsWith('text-') ? getComputedStyle(document.documentElement).getPropertyValue(`--color-${currentTheme.text.split('-')[1]}-${currentTheme.text.split('-')[2] || '500'}`) || '#333333' : currentTheme.text;
+    const secondaryTextColor = currentTheme.textSecondary.startsWith('text-') ? getComputedStyle(document.documentElement).getPropertyValue(`--color-${currentTheme.textSecondary.split('-')[1]}-${currentTheme.textSecondary.split('-')[2] || '500'}`) || '#777777' : currentTheme.textSecondary;
+    
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+    const primaryAccentColor = currentTheme.accent?.startsWith('bg-') ? getComputedStyle(document.documentElement).getPropertyValue(`--color-${currentTheme.accent.split('-')[1]}-500`) || '#5D5CDE' : (currentTheme.accent || '#5D5CDE');
+
+    if (activityChartRef.current) {
+      const ctx = activityChartRef.current.getContext('2d') as ChartItem;
+      chartInstancesRef.current.activity = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], // Placeholder labels
+          datasets: [{
+            label: 'Words Written',
+            data: [120, 190, 300, 500, 250, 400, 320], // Placeholder data
+            borderColor: primaryAccentColor,
+            backgroundColor: `${primaryAccentColor}55`, // Increased opacity for better visibility
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: primaryAccentColor,
+            pointBorderColor: currentTheme.cardBg, 
+            pointHoverBackgroundColor: currentTheme.cardBg,
+            pointHoverBorderColor: primaryAccentColor,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { 
+            y: { beginAtZero: true, ticks: { color: primaryTextColor, font: { size: 10 } }, grid: { color: gridColor, drawBorder: false } }, 
+            x: { ticks: { color: primaryTextColor, font: { size: 10 } }, grid: { display: false } } 
+          },
+          interaction: { intersect: false, mode: 'index' }
+        }
+      });
+    }
+
+    if (contentDistributionChartRef.current) {
+        const noteCategories = projectNotes.reduce((acc, note) => { acc[note.category] = (acc[note.category] || 0) + 1; return acc; }, {} as Record<string, number>);
+        const loreTypesData = projectLore.reduce((acc, lore) => { acc[lore.type] = (acc[lore.type] || 0) + 1; return acc; }, {} as Record<string, number>);
+        
+        const combined: Record<string, number> = {};
+        Object.entries(noteCategories).forEach(([key, value]) => combined[`N: ${key}`] = value);
+        Object.entries(loreTypesData).forEach(([key, value]) => combined[`L: ${key}`] = value);
+
+        const dataValues = Object.keys(combined).length > 0 ? Object.values(combined) : [1];
+        const dataLabels = Object.keys(combined).length > 0 ? Object.keys(combined) : ['No Data'];
       
-      <div className={`${currentTheme.cardBg} p-6 rounded-xl shadow-xl text-center opacity-90`}>
-        <Edit3 className={`w-10 h-10 ${currentTheme.accent.replace('bg-','text-')} mx-auto mb-4`} />
-        <h3 className={`text-xl font-semibold ${currentTheme.text} mb-2`}>เริ่มสร้างสรรค์ผลงานของคุณ</h3>
-        <p className={`${currentTheme.textSecondary} text-sm`}>
-          ใช้เครื่องมือต่างๆ เพื่อจัดการไอเดีย, โครงเรื่อง, ตัวละคร และงานเขียนของคุณให้เป็นระบบ
-          Ashval พร้อมเป็นผู้ช่วยให้จินตนาการของคุณเป็นจริง!
-        </p>
-      </div>
+        const chartColors = [
+            primaryAccentColor, 
+            currentTheme.buttonSecondaryBg?.startsWith('bg-') ? (getComputedStyle(document.documentElement).getPropertyValue(`--color-${currentTheme.buttonSecondaryBg.split('-')[1]}-500`) || '#38B2AC') : (currentTheme.buttonSecondaryBg || '#38B2AC'),
+            '#FF9F5A', '#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EC4899'
+        ];
+        const backgroundColors = dataLabels.map((_, i) => chartColors[i % chartColors.length]);
+
+      const ctx = contentDistributionChartRef.current.getContext('2d') as ChartItem;
+      chartInstancesRef.current.contentDistribution = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels: dataLabels, datasets: [{ data: dataValues, backgroundColor: backgroundColors, borderWidth: 0, hoverOffset: 8 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '70%',
+          plugins: { legend: { position: 'bottom', labels: { color: primaryTextColor, usePointStyle: true, boxWidth: 8, padding: 15, font: {size: 10} } } }
+        }
+      });
+    }
+    return () => {
+      if (chartInstancesRef.current.activity) chartInstancesRef.current.activity.destroy();
+      if (chartInstancesRef.current.contentDistribution) chartInstancesRef.current.contentDistribution.destroy();
+    };
+  }, [currentTheme, projectNotes, projectLore, projectData]); 
+
+  const totalNotes = projectNotes.length;
+  const completedTasks = projectTasks.filter(task => task.completed).length;
+  const totalTasks = projectTasks.length;
+  const writingStreak = 12; // Placeholder
+  const totalWords = projectNotes.reduce((sum, note) => {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = note.content;
+    return sum + (tempDiv.textContent || tempDiv.innerText || "").trim().split(/\s+/).filter(Boolean).length;
+  }, 0);
+
+  // Placeholder values until actual data is available
+  const writingTimeThisWeek = "24.5 ชม."; 
+  const aiUsageThisMonth = 32;
+  const notesAddedThisWeek = Math.max(1, Math.round(totalNotes * 0.12)); // Ensure at least 1 if totalNotes > 0
+
+  // FAB for Add Note
+  const fabAction = () => {
+    onOpenNoteModal();
+  };
+
+  return (
+    <div className={`py-4 sm:py-6 px-1 sm:px-0 animate-fadeIn ${currentTheme.text}`}>
+      <header className="mb-6 sm:mb-8 px-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+            <div>
+                <h1 className="text-xl sm:text-2xl font-bold">แดชบอร์ด {activeProject ? `: ${activeProject.name}` : ''}</h1>
+                <p className={`${currentTheme.textSecondary} text-sm`}>ภาพรวมโปรเจกต์และการใช้งานล่าสุด</p>
+            </div>
+             <div className="flex space-x-2 mt-3 md:mt-0">
+                <div className={`glass-card rounded-lg shadow-sm px-3 py-1.5 flex items-center`}>
+                    <TrendingUp size={16} className="text-orange-500 mr-2" />
+                    <div>
+                        <div className={`text-xs ${currentTheme.textSecondary}`}>ความต่อเนื่อง</div>
+                        <div className="font-medium text-sm">{writingStreak} วัน</div>
+                    </div>
+                </div>
+                <div className={`glass-card rounded-lg shadow-sm px-3 py-1.5 flex items-center`}>
+                    <EditIcon size={16} className={`${currentTheme.accentText || currentTheme.accent.replace('bg-','text-')} mr-2`} />
+                    <div>
+                        <div className={`text-xs ${currentTheme.textSecondary}`}>คำทั้งหมด</div>
+                        <div className="font-medium text-sm">{totalWords.toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </header>
+
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 px-2">
+        <StatCard title="โน้ตทั้งหมด" value={totalNotes} icon={<FileText />} theme={currentTheme} details={`+${notesAddedThisWeek} สัปดาห์นี้`} progress={totalNotes > 0 ? (notesAddedThisWeek / Math.max(totalNotes,10)) * 100 : 0} colorClass={currentTheme.accent.split('-')[0]+"-blue-500"}/>
+        <StatCard title="งานเสร็จสมบูรณ์" value={`${completedTasks}/${totalTasks}`} icon={<ListChecks />} theme={currentTheme} details={`${Math.round((completedTasks/ (totalTasks||1) )*100)}% สำเร็จ`} progress={(completedTasks/(totalTasks||1))*100} colorClass="bg-green-500"/>
+        <StatCard title="เวลาเขียน (สัปดาห์นี้)" value={writingTimeThisWeek} icon={<Activity />} theme={currentTheme} details="เป้าหมาย 40 ชม." progress={(24.5/40)*100} colorClass="bg-purple-500"/>
+        <StatCard title="การใช้ AI (เดือนนี้)" value={aiUsageThisMonth} icon={<Bot />} theme={currentTheme} details="3 โหมดใช้งานบ่อย" progress={60} colorClass="bg-orange-500"/>
+      </section>
+      
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 px-2">
+        <QuickActionCard title="เพิ่มโน้ต" description="บันทึกแนวคิดใหม่" icon={<StickyNote />} onClick={onOpenNoteModal} theme={currentTheme} />
+        <QuickActionCard title="เพิ่มงาน" description="จัดการสิ่งที่ต้องทำ" icon={<ListTodo />} onClick={onOpenTaskModal} theme={currentTheme} />
+        <QuickActionCard title="AI Writer" description="ให้ AI ช่วยเขียน" icon={<Zap />} onClick={() => onNavigateTo('/ai')} theme={currentTheme} />
+        <QuickActionCard title="Pomodoro" description="เริ่มโฟกัส" icon={<Clock />} onClick={() => onNavigateTo('/pomodoro')} theme={currentTheme} />
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 sm:mb-8 px-2">
+        <div className={`glass-card rounded-xl shadow-lg p-4 sm:p-6 lg:col-span-2`}>
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">กิจกรรมการเขียน (7 วันล่าสุด)</h3>
+          <div className="h-56 sm:h-64"><canvas ref={activityChartRef}></canvas></div>
+        </div>
+        <div className={`glass-card rounded-xl shadow-lg p-4 sm:p-6`}>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">สัดส่วนเนื้อหา</h3>
+             <div className="h-56 sm:h-64"><canvas ref={contentDistributionChartRef}></canvas></div>
+        </div>
+      </section>
+      
+      {activeProject && (
+        <section className={`glass-card rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 mx-2`}>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">ความคืบหน้าโปรเจกต์: {activeProject.name}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                <ProgressBar label="เป้าหมายเนื้อเรื่อง (บท)" current={projectNotes.filter(n => n.category === 'chapter').length} target={activeProject.genre === 'นิยายขนาดสั้น' ? 12 : 25} unit="บท" colorClass={currentTheme.accent} theme={currentTheme} />
+                <ProgressBar label="โน้ตทั้งหมดในโปรเจกต์" current={projectNotes.length} target={50} unit="โน้ต" colorClass="bg-yellow-500" theme={currentTheme}/>
+                <ProgressBar label="งานในโปรเจกต์" current={projectTasks.filter(t=>t.completed).length} target={projectTasks.length} unit="งาน" colorClass="bg-green-500" theme={currentTheme}/>
+                <ProgressBar label="ตัวละคร" current={projectLore.filter(l=>l.type === 'Character').length} target={10} unit="ตัวละคร" colorClass="bg-pink-500" theme={currentTheme}/>
+                <ProgressBar label="ข้อมูลโลก" current={projectLore.length} target={30} unit="รายการ" colorClass="bg-indigo-500" theme={currentTheme}/>
+            </div>
+        </section>
+      )}
+
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
+        <div className={`glass-card rounded-xl shadow-lg p-4 sm:p-5`}>
+            <div className="flex justify-between items-center mb-3">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center"><FileText size={18} className="mr-2 opacity-80"/>โน้ตล่าสุด</h3>
+                <button onClick={() => onNavigateTo('/notes')} className={`${currentTheme.accentText || currentTheme.accent.replace('bg-','text-')} text-xs sm:text-sm hover:underline`}>ดูทั้งหมด</button>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+            {projectNotes.slice(0, 3).map(note => (
+                <div key={note.id} className={`p-2.5 rounded-lg hover:${currentTheme.inputBg} bg-opacity-50 cursor-pointer transition-colors`} onClick={() => onNavigateTo(`/notes`)}>
+                    <div className="flex items-center mb-0.5">
+                        {note.icon && <span className="mr-1.5 text-base sm:text-md">{note.icon}</span>}
+                        {!note.icon && <Maximize size={14} className={`${currentTheme.textSecondary} mr-1.5`} />}
+                        <span className={`text-sm font-medium ${currentTheme.text} truncate`}>{note.title}</span>
+                    </div>
+                    <p className={`text-xs ${currentTheme.textSecondary} opacity-70`}>{new Date(note.updatedAt || note.createdAt).toLocaleDateString('th-TH', {day:'2-digit', month:'short'})}</p>
+                </div>
+            ))}
+            {projectNotes.length === 0 && <p className={`${currentTheme.textSecondary} text-xs italic`}>ไม่มีโน้ต</p>}
+            </div>
+        </div>
+
+        <div className={`glass-card rounded-xl shadow-lg p-4 sm:p-5`}>
+            <div className="flex justify-between items-center mb-3">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center"><ListChecks size={18} className="mr-2 opacity-80"/>งานที่กำลังทำ</h3>
+                 <button onClick={() => onNavigateTo('/tasks')} className={`${currentTheme.accentText || currentTheme.accent.replace('bg-','text-')} text-xs sm:text-sm hover:underline`}>ดูทั้งหมด</button>
+            </div>
+            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+            {projectTasks.filter(t => !t.completed).slice(0, 3).map(task => (
+                 <div key={task.id} className={`p-2.5 rounded-lg hover:${currentTheme.inputBg} bg-opacity-50 cursor-pointer transition-colors ${currentTheme.inputBg}`} onClick={() => onNavigateTo('/tasks')}>
+                     <div className="flex items-center mb-0.5">
+                        {task.icon && <span className="mr-1.5 text-base sm:text-md">{task.icon}</span>}
+                        {!task.icon && <Briefcase size={14} className={`${currentTheme.textSecondary} mr-1.5`} />}
+                        <span className={`text-sm font-medium ${currentTheme.text} ${task.completed ? 'line-through' : ''} truncate`}>{task.title}</span>
+                    </div>
+                    <p className={`text-xs ${currentTheme.textSecondary} opacity-70`}>{task.category}{task.dueDate ? ` - ${new Date(task.dueDate+'T00:00:00').toLocaleDateString('th-TH', {day:'2-digit', month:'short'})}` : ''}</p>
+                </div>
+            ))}
+            {projectTasks.filter(t => !t.completed).length === 0 && <p className={`${currentTheme.textSecondary} text-xs italic`}>ไม่มีงานที่กำลังทำ</p>}
+            </div>
+        </div>
+        
+        <div className={`glass-card rounded-xl shadow-lg p-4 sm:p-5`}>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-base sm:text-lg font-semibold flex items-center"><Brain size={18} className="mr-2 opacity-80"/>AI Writer ล่าสุด</h3>
+              <button onClick={() => onNavigateTo('/ai')} className={`${currentTheme.accentText || currentTheme.accent.replace('bg-','text-')} text-xs sm:text-sm hover:underline`}>เปิด AI Writer</button>
+            </div>
+             <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                 <div className={`p-2.5 rounded-lg hover:${currentTheme.inputBg} bg-opacity-50 cursor-pointer transition-colors`} onClick={() => onNavigateTo('/ai')}>
+                    <p className={`text-sm font-medium ${currentTheme.text}`}>วิเคราะห์ตัวละคร: เอราเดีย</p>
+                    <p className={`${currentTheme.textSecondary} text-xs opacity-70`}>เมื่อวาน, 14:35</p>
+                </div>
+                 <div className={`p-2.5 rounded-lg hover:${currentTheme.inputBg} bg-opacity-50 cursor-pointer transition-colors`} onClick={() => onNavigateTo('/ai')}>
+                    <p className={`text-sm font-medium ${currentTheme.text}`}>สร้างฉากต่อสู้ในป่าสน</p>
+                    <p className={`${currentTheme.textSecondary} text-xs opacity-70`}>2 วันที่แล้ว, 20:15</p>
+                </div>
+                 <div className={`p-2.5 rounded-lg hover:${currentTheme.inputBg} bg-opacity-50 cursor-pointer transition-colors`} onClick={() => onNavigateTo('/ai')}>
+                    <p className={`text-sm font-medium ${currentTheme.text}`}>สรุปเนื้อเรื่องบทที่ 5</p>
+                    <p className={`${currentTheme.textSecondary} text-xs opacity-70`}>3 วันที่แล้ว, 09:30</p>
+                </div>
+            </div>
+        </div>
+      </section>
+
+       <div className={`glass-card rounded-xl shadow-lg p-4 sm:p-6 mt-6 text-center mx-2`}>
+            <Clock size={20} className={`${currentTheme.accentText || currentTheme.accent.replace('bg-','text-')} mb-1.5 mx-auto`} />
+            <p className={`text-2xl sm:text-3xl font-bold ${currentTheme.text}`}>{formatPomodoroTime(pomodoroTimeLeft)}</p>
+            <p className={`${currentTheme.textSecondary} text-xs sm:text-sm mt-0.5`}>
+                {pomodoroCurrentMode === 'work' ? 'Work Session' : pomodoroCurrentMode === 'shortBreak' ? 'Short Break' : 'Long Break'}
+            </p>
+             <button onClick={() => onNavigateTo('/pomodoro')} className={`mt-2 text-xs ${currentTheme.accentText || currentTheme.accent.replace('bg-','text-')} hover:underline font-medium py-1 px-2 rounded-md hover:${currentTheme.accent} hover:bg-opacity-10`}>
+                ไปที่ Pomodoro Timer
+            </button>
+        </div>
+
+      {/* Floating Action Button */}
+      <button 
+        onClick={fabAction} 
+        className="fab-global text-white text-2xl animate-float" 
+        title="เพิ่มโน้ตใหม่"
+        aria-label="เพิ่มโน้ตใหม่"
+      >
+        <Plus size={28} />
+      </button>
     </div>
   );
 };

@@ -1,13 +1,5 @@
 
-
-
-
-import { AppNote, AppTask, LoreEntry, PomodoroConfig, UserPreferences, Project, PlotOutlineNode } from '../../../types'; // Adjust path as necessary, Added Project, PlotOutlineNode
-
-// Backend URL configuration is no longer needed as backend is removed.
-// const API_SERVICE_PATH = "/api"; 
-// const DEFAULT_BACKEND_URL_FOR_DEV = `http://localhost:3001${API_SERVICE_PATH}`;
-// let apiBaseUrl: string; ... (all apiBaseUrl logic removed)
+import { AppNote, AppTask, LoreEntry, PomodoroConfig, UserPreferences, Project, UserNoteTemplate, PlotOutlineNode } from '../../../types'; // Added UserNoteTemplate, PlotOutlineNode
 
 console.log("appDataService: Initialized for localStorage-only operation (backend removed).");
 
@@ -16,6 +8,7 @@ export interface AppDataType {
   tasks: AppTask[];
   loreEntries: LoreEntry[];
   projects: Project[]; 
+  userTemplates: UserNoteTemplate[];
   plotOutlines: PlotOutlineNode[]; // Added plotOutlines
   activeTheme: string;
   pomodoroConfig: PomodoroConfig;
@@ -24,14 +17,22 @@ export interface AppDataType {
 
 export const fetchAppDataFromServer = async (): Promise<AppDataType | null> => {
   console.warn("[appDataService] fetchAppDataFromServer called, but backend is removed. Returning null. App should rely on localStorage.");
-  // This function used to fetch from a backend. Now, it signifies no server data.
-  // The main application logic in NoteTaskApp.tsx should handle this by primarily using localStorage.
   return null; 
 };
 
 export const saveAppDataToServer = async (appData: AppDataType): Promise<boolean> => {
   console.warn("[appDataService] saveAppDataToServer called, but backend is removed. Data is persisted in localStorage only. Returning 'true' to indicate no operational failure here.");
-  // This function used to save to a backend. Now, it's a no-op for server interaction.
-  // Returning true to not break existing flows that might expect a success state.
+  // For future if backend is re-added:
+  // try {
+  //   const response = await fetch(`${process.env.REACT_APP_BACKEND_API_URL}/api/appdata`, {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify(appData),
+  //   });
+  //   return response.ok;
+  // } catch (error) {
+  //   console.error("Error saving app data to server:", error);
+  //   return false;
+  // }
   return true;
 };

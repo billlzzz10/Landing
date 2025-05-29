@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ashval Writer's Suite - Integrated</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        crossorigin="anonymous"
+    />
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Ensure dark mode is class-based
+            theme: {
+                extend: {
+                    colors: {
+                        // Existing colors, can be augmented or used as needed
+                        primary: {
+                            light: '#60A5FA', // blue-400
+                            DEFAULT: '#3B82F6', // blue-500
+                            dark: '#2563EB'  // blue-600
+                        },
+                        secondary: {
+                            light: '#34D399', // emerald-400
+                            DEFAULT: '#10B981', // emerald-500
+                            dark: '#059669'  // emerald-600
+                        },
+                        neutral: {
+                          DEFAULT: '#6B7280', // gray-500
+                          light: '#9CA3AF', // gray-400
+                          dark: '#4B5563' // gray-600
+                        },
+                        bglight: '#F3F4F6', // gray-100 (closer to user's HTML bg-gray-100)
+                        bgdark: '#111827', // gray-900 (user's HTML uses bg-gray-900)
+                        contentlight: '#ffffff', // white
+                        contentdark: '#1F2937', // gray-800
+                        textlight: '#1F2937', // gray-800
+                        textdark: '#F3F4F6', // gray-100
+                        borderlight: '#D1D5DB', // gray-300
+                        borderdark: '#374151', // gray-700 (user's HTML uses darker borders in dark mode)
+                    },
+                    // Add any specific animation/transition settings if needed
+                    // Example: transitionProperty, transitionDuration, keyframes
+                }
+            },
+            plugins: []
+        };
+
+        // Apply initial theme based on localStorage to avoid FOUC
+        (function() {
+            const theme = localStorage.getItem('ashval_theme'); // Ensure this key matches themeService
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+    <style>
+      /* Custom scrollbar (from user's HTML v1.9) */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(93, 92, 222, 0.5); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(93, 92, 222, 0.7); }
+      .dark ::-webkit-scrollbar-thumb { background: rgba(107, 114, 128, 0.5); }
+      .dark ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.7); }
+
+      /* Transitions (from user's HTML) - apply .smooth-transition class in components */
+      .smooth-transition {
+        transition-property: background-color, border-color, color, fill, stroke, opacity, transform, box-shadow;
+        transition-duration: 0.3s;
+        transition-timing-function: ease-in-out;
+      }
+      /* Specific component transitions from user's HTML, if not handled by Tailwind's transition utilities */
+      .bottom-toolbar-transition { /* Renamed to avoid conflict if there's a class 'bottom-toolbar' */
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+      }
+      .tool-drawer-transition { /* Renamed */
+        transition: transform 0.4s ease-in-out;
+      }
+
+      /* Styles for Focus Mode (from user's HTML) */
+      .focus-mode-active #app-header, /* Target component IDs used in React app */
+      .focus-mode-active #app-sidebar,
+      .focus-mode-active #app-sidebar-backdrop,
+      .focus-mode-active #app-bottom-toolbar {
+        display: none !important;
+      }
+      .focus-mode-active #app-main-content {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 80ch !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+      body.overflow-hidden-sm-down {
+        overflow: hidden;
+      }
+      @media (min-width: 640px) { /* sm breakpoint */
+        body.overflow-hidden-sm-down {
+          overflow: auto; /* Or revert to initial, depending on desired behavior */
+        }
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react-router-dom": "https://esm.sh/react-router-dom@6",
+    "lucide-react": "https://esm.sh/lucide-react@0.244.0",
+    "pdfjs-dist": "https://esm.sh/pdfjs-dist@3.11.174",
+    "fuse.js": "https://esm.sh/fuse.js@6.6.2",
+    "@google/genai": "https://esm.sh/@google/genai@^1.2.0"
+  }
+}
+</script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans min-h-screen flex flex-col">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html><link rel="stylesheet" href="index.css">
+<script src="index.tsx" type="module"></script>
